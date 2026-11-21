@@ -6,7 +6,7 @@ func errParamIsRequired(name, typ string) error {
 	return fmt.Errorf("param: %s (type: %s) is required", name, typ)
 }
 
-type CreateOpeningRequest struct {
+type OpeningRequest struct {
 	Role     string `json:"role"`
 	Company  string `json:"company"`
 	Location string `json:"location"`
@@ -14,6 +14,8 @@ type CreateOpeningRequest struct {
 	Link     string `json:"link"`
 	Salary   int64  `json:"salary"`
 }
+
+type CreateOpeningRequest OpeningRequest
 
 func (r *CreateOpeningRequest) Validate() error {
 	if r.Role == "" && r.Company == "" && r.Location == "" && r.Link == "" && r.Remote == nil && r.Salary <= 0 {
@@ -39,4 +41,16 @@ func (r *CreateOpeningRequest) Validate() error {
 	}
 
 	return nil
+}
+
+type UpdateOpeningRequest OpeningRequest
+
+func (r *UpdateOpeningRequest) Validate() error {
+	// If any field is provided, validation is truthy
+	if r.Role != "" || r.Company != "" || r.Location != "" || r.Link != "" || r.Remote != nil || r.Salary > 0 {
+		return nil
+	}
+
+	// If none of the fields wew provided, return falsy
+	return fmt.Errorf("at last one valid field must be provided")
 }

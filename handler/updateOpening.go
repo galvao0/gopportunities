@@ -1,5 +1,63 @@
 package handler
 
-import "github.com/gin-gonic/gin"
+import (
+	"net/http"
 
-func UpdateOpeningHandler(c *gin.Context) {}
+	"github.com/galvao0/gopportunities/schemas"
+	"github.com/gin-gonic/gin"
+)
+
+func UpdateOpeningHandler(c *gin.Context) {
+	request := UpdateOpeningRequest{}
+	c.BindJSON(&request)
+
+	if err := request.Validate(); err != nil {
+		logger.Errorf("validation error: %v", err)
+		sendError(c, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	id := c.Query("id")
+	if id == "" {
+		sendError(c, http.StatusBadRequest, errParamIsRequired("id", "queryParameter").Error())
+		return
+	}
+
+	opening := schemas.Opening{}
+
+	if err := db.First(&opening, id).Error; err != nil {
+		sendError(c, http.StatusBadRequest, "opening not found")
+		return
+	}
+
+	// Update Opening
+	if request.Role != "" {
+		opening.Role = request.Role
+	}
+	if request.Company != "" {
+		opening.Company = request.Company
+	}
+	if request.Location != "" {
+		opening.Location = request.Location
+	}
+	if request.Remote != nil {
+		opening.Remote = *request.Remote
+	}
+	if request.Link != "" {
+		opening.Link = request.Link
+	}
+	if request.Salary > 0 {
+		opening.Salary = request.Salary
+	}
+
+	// Save opening
+	if err := db.Save(&opening).Error; err != nil {
+		{
+			logger.Errorf("error updating openiing %v", err.Error())
+			sendError(c, http.StatusInternalServerError, "error updating opening")
+			return
+		}
+	}
+
+	SendSuccess(c, "update-opening", opening)
+}
